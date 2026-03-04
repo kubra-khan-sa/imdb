@@ -11,6 +11,14 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// Initialize database connection
+	db, err := ConnectMongoDB(ctx, "mydatabase")
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	log.Println("Connected to MongoDB")
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      http.DefaultServeMux,
