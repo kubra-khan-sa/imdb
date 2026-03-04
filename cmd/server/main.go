@@ -8,13 +8,17 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"imdb-movies/internal/database"
+	"imdb-movies/internal/handlers"
+	"imdb-movies/internal/repository"
+	"github.com/gin-gonic/gin"	
 )
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// Initialize database connection
-	db, err := ConnectMongoDB(ctx, "mydatabase")
+	db, err := database.ConnectMongoDB(ctx, "mydatabase")
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}

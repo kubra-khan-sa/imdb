@@ -21,7 +21,7 @@ type Movie struct {
 	VoteCount int                `bson:"vote_count"`
 	ProducionCompanyId string             `bson:"production_company_id"`
 	GenreId string             `bson:"genre_id"`
-	Languages string []            `bson:"languages"`
+	Languages  []string            `bson:"languages"`
 	CreatedAt time.Time          `bson:"created_at"`
 	UpdatedAt time.Time          `bson:"updated_at"`
 }
