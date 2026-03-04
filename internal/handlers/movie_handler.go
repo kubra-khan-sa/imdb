@@ -45,3 +45,30 @@ func (h *MovieHandler) ListMovies(c *gin.Context) error {
 	}
 	return c.JSON(http.StatusOK, response)
 }
+func GetFilterOptions(c *gin.Context) *repository.ListMoviesOptions {
+	ctx:= c.Request.Context()
+	years, err := h.repo.GetDistinctYears(ctx)
+	if err != nil {
+		return nil
+	}
+	languages, err := h.repo.GetDistinctLanguages(ctx)
+	if err != nil {
+		return nil
+	}
+	return &repository.ListMoviesOptions{
+		Years: years,
+		Languages: languages,
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"years": years,
+		"languages": languages,
+	})
+}
+func getIntparam(c *gin.Context, name string, defaultValue int) int {
+	valueStr := c.DefaultQuery(name, strconv.Itoa(defaultValue))
+	value, err := strconv.Atoi(valueStr)
+	if err != nil || value <= 0 {
+		return defaultValue
+	}
+	return value
+}

@@ -19,9 +19,12 @@ func main() {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	log.Println("Connected to MongoDB")
+	movierepo := NewMovieRepository(db)
+	movieHandler := handlers.NewMovieHandler(movierepo)
+	router :=setupRoutes(movieHandler, 10)	
 	server := &http.Server{
 		Addr:         ":8080",
-		Handler:      http.DefaultServeMux,
+		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
@@ -50,4 +53,18 @@ func main() {
 	}
 
 	log.Println("Server gracefully stopped")
+}
+
+func setupRoutes() {
+	router:=gin.Default()
+	router.MaxMultipartMemory = maxUploadSize
+	router.GET("/health", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+	v1 := router.Group("/api/v1")
+	{
+		v1.POST("/upload", uploadHandler)
+		v1.GET("/movies", getFileHandler)
+		v1.GET("/movies/filters", getFiltersHandler)
+	}
 }
