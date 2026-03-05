@@ -58,7 +58,7 @@ func (s *UploadService) ProcessUpload(ctx context.Context, r io.Reader) (*Upload
 			if len(movies) == 0 {
 				return result, nil
 			}
-			if err := s.repo.InsertMany(ctx, movies); err != nil {
+			if err := s.repo.UpsertMany(ctx, movies); err != nil {
 				mu.Lock()
 				result.Errors += len(movies)
 				mu.Unlock()

@@ -72,20 +72,17 @@ func (p *StreamParser) ParseBatch(batchSize int) ([]*models.Movie, error) {
 	return movies, nil
 }
 
-// Date formats to try (primary: YYYY-MM-DD per CSV spec)
-var dateFormats = []string{"2006-01-02", "02-01-2006", "01/02/2006", "2006/01/02"}
-
+// parseDate parses release_date in YYYY-MM-DD format (e.g. 2020-12-16)
 func parseDate(s string) time.Time {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return time.Time{}
 	}
-	for _, layout := range dateFormats {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t
-		}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return time.Time{}
 	}
-	return time.Time{}
+	return t
 }
 
 func (p *StreamParser) ParseRow(record []string) (*models.Movie, error) {

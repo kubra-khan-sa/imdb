@@ -33,19 +33,24 @@ func NewMovieRepository(db *mongo.Database) *MovieRepository {
 	}
 }
 
-func (r *MovieRepository) InsertMany(ctx context.Context, movies []*models.Movie) error {
-
+// UpsertMany inserts or updates movies to avoid duplicates. Uses (title, release_year) as the unique key.
+func (r *MovieRepository) UpsertMany(ctx context.Context, movies []*models.Movie) error {
 	if len(movies) == 0 {
 		return nil
 	}
-
-	docs := make([]interface{}, len(movies))
-	for i, movie := range movies {
-		docs[i] = movie
+	models := make([]mongo.WriteModel, 0, len(movies))
+	for _, movie := range movies {
+		filter := bson.M{
+			"title":         movie.Title,
+			"release_year": movie.ReleaseYear,
+		}
+		models = append(models, mongo.NewReplaceOneModel().
+			SetFilter(filter).
+			SetReplacement(movie).
+			SetUpsert(true))
 	}
-
-	_, err := r.collection.InsertMany(ctx, docs)
-	return err	
+	_, err := r.collection.BulkWrite(ctx, models)
+	return err
 }
 func (r *MovieRepository) GetDistinctYears(ctx context.Context) ([]int, error) {
 	values, err := r.collection.Distinct(ctx, "release_year", bson.M{})
@@ -56,13 +61,13 @@ func (r *MovieRepository) GetDistinctYears(ctx context.Context) ([]int, error) {
 	for i, v := range values {
 		if y, ok := v.(int); ok {
 			years = append(years, y)
-		}else if y, ok := v.(int32); ok {
+		} else if y, ok := v.(int32); ok {
 			years = append(years, int(y))
-		}else if y, ok := v.(int64); ok {
+		} else if y, ok := v.(int64); ok {
 			years = append(years, int(y))
 		} else {
 			log.Printf("unexpected type for release_year at index %d: %T", i, v)
-		}	
+		}
 	}
 	return years, nil
 }

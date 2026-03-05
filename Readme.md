@@ -107,6 +107,8 @@ curl -X POST http://localhost:8080/api/v1/upload \
 }
 ```
 
+*Note: Duplicate movies (same title + release year) are updated; new movies are appended.*
+
 ### List Movies
 
 **Query parameters:**
