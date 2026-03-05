@@ -40,17 +40,11 @@ func NewStreamParser(r io.Reader) *StreamParser {
 	reader.LazyQuotes = true
 	reader.TrimLeadingSpace = true
 	reader.FieldsPerRecord = -1 // Allow variable field count
-	// Support tab-delimited files (common for movie datasets)
 	reader.Comma = ','
 	return &StreamParser{
 		reader: reader,
 		now:    time.Now().UTC(),
 	}
-}
-
-// SetComma sets the field delimiter (e.g. ',' or '\t')
-func (p *StreamParser) SetComma(c rune) {
-	p.reader.Comma = c
 }
 
 // ReadHeader reads and returns the header row
@@ -78,30 +72,50 @@ func (p *StreamParser) ParseBatch(batchSize int) ([]*models.Movie, error) {
 	return movies, nil
 }
 
+// Date formats to try (primary: YYYY-MM-DD per CSV spec)
+var dateFormats = []string{"2006-01-02", "02-01-2006", "01/02/2006", "2006/01/02"}
+
+func parseDate(s string) time.Time {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return time.Time{}
+	}
+	for _, layout := range dateFormats {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
 func (p *StreamParser) ParseRow(record []string) (*models.Movie, error) {
 	for len(record) < 15 {
 		record = append(record, "")
 	}
-	releaseDate, _ := time.Parse("2006-01-02", strings.TrimSpace(record[colReleaseDate]))
+	releaseDate := parseDate(record[colReleaseDate])
+	releaseYear := 0
+	if !releaseDate.IsZero() {
+		releaseYear = releaseDate.Year()
+	}
 	movie := &models.Movie{
-		Budget:               parseInt(record[colBudget]),
-		Homepage:             strings.TrimSpace(record[colHomepage]),
-		OriginalLanguage:     strings.TrimSpace(record[colOriginalLanguage]),
-		OriginalTitle:        strings.TrimSpace(record[colOriginalTitle]),
-		Overview:             strings.TrimSpace(record[colOverview]),
-		ReleaseDate:          releaseDate,
-		ReleaseYear:          releaseDate.Year(),
-		Revenue:              parseInt(record[colRevenue]),
-		Runtime:              parseInt(record[colRuntime]),
-		Status:               strings.TrimSpace(record[colStatus]),
-		Title:                strings.TrimSpace(record[colTitle]),
-		VoteAverage:          parseFloat(record[colVoteAverage]),
-		VoteCount:            parseInt(record[colVoteCount]),
-		ProductionCompanyId:   strings.TrimSpace(record[colProductionCompanyID]),
-		GenreId:              strings.TrimSpace(record[colGenreID]),
-		Languages:            parseLanguages(record[colLanguages]),
-		CreatedAt:            p.now,
-		UpdatedAt:            p.now,
+		Budget:              parseInt(record[colBudget]),
+		Homepage:            strings.TrimSpace(record[colHomepage]),
+		OriginalLanguage:    strings.TrimSpace(record[colOriginalLanguage]),
+		OriginalTitle:       strings.TrimSpace(record[colOriginalTitle]),
+		Overview:            strings.TrimSpace(record[colOverview]),
+		ReleaseDate:         releaseDate,
+		ReleaseYear:         releaseYear,
+		Revenue:             parseInt(record[colRevenue]),
+		Runtime:             parseInt(record[colRuntime]),
+		Status:              strings.TrimSpace(record[colStatus]),
+		Title:               strings.TrimSpace(record[colTitle]),
+		VoteAverage:         parseFloat(record[colVoteAverage]),
+		VoteCount:           parseInt(record[colVoteCount]),
+		ProductionCompanyId: strings.TrimSpace(record[colProductionCompanyID]),
+		GenreId:             strings.TrimSpace(record[colGenreID]),
+		Languages:           parseLanguages(record[colLanguages]),
+		CreatedAt:           p.now,
+		UpdatedAt:           p.now,
 	}
 	return movie, nil
 }

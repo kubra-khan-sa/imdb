@@ -29,11 +29,8 @@ type UploadResult struct {
 	Errors        int `json:"errors"`
 }
 
-func (s *UploadService) ProcessUpload(ctx context.Context, r io.Reader, delimiter string) (*UploadResult, error) {
+func (s *UploadService) ProcessUpload(ctx context.Context, r io.Reader) (*UploadResult, error) {
 	parser := csv.NewStreamParser(r)
-	if delimiter == "tab" || delimiter == "\t" {
-		parser.SetComma('\t')
-	}
 	_, err := parser.ReadHeader()
 	if err == io.EOF {
 		return &UploadResult{

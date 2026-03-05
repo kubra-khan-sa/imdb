@@ -46,9 +46,7 @@ func (h *UploadHandler) UploadCSV(c *gin.Context) {
 	}
 	defer f.Close()
 
-	// Optional: delimiter can be "tab" or "comma" (default)
-	delimiter := c.PostForm("delimiter")
-	result, err := h.service.ProcessUpload(c.Request.Context(), f, delimiter)
+	result, err := h.service.ProcessUpload(c.Request.Context(), f)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process uploaded file: " + err.Error()})
 		return

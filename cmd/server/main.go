@@ -83,6 +83,7 @@ func setupRoutes(movieHandler *handlers.MovieHandler, uploadHandler *handlers.Up
 	{
 		v1.POST("/upload", uploadHandler.UploadCSV)
 		v1.GET("/movies", movieHandler.ListMovies)
+		v1.DELETE("/movies", movieHandler.DeleteAll)
 		v1.GET("/movies/filters", movieHandler.GetFilterOptions)
 	}
 

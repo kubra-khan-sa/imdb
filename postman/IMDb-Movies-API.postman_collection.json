@@ -1,0 +1,209 @@
+{
+	"info": {
+		"_postman_id": "imdb-movies-api-collection",
+		"name": "IMDb Movies - Content Upload & Review API",
+		"description": "APIs for uploading movie CSV data and viewing movies with filtering, sorting, and pagination.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["health"]
+				},
+				"description": "Check if the API server is running"
+			}
+		},
+		{
+			"name": "Upload CSV",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "",
+							"description": "CSV file with columns: budget, homepage, original_language, original_title, overview, release_date, revenue, runtime, status, title, vote_average, vote_count, production_company_id, genre_id, languages"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/upload",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "upload"]
+				},
+				"description": "Upload a CSV file containing movie data. Supports files up to 1GB. Use form-data with key 'file'."
+			}
+		},
+		{
+			"name": "Delete All Movies",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/movies",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "movies"]
+				},
+				"description": "Delete all movie records from the database"
+			}
+		},
+		{
+			"name": "List Movies - Default",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/movies?page=1&per_page=10",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "movies"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number (default: 1)"
+						},
+						{
+							"key": "per_page",
+							"value": "10",
+							"description": "Items per page (default: 10)"
+						}
+					]
+				},
+				"description": "Get paginated list of movies with default sorting by release_date desc"
+			}
+		},
+		{
+			"name": "List Movies - With Filters & Sort",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/movies?page=1&per_page=10&year=2020&language=en&sort_by=vote_average&sort_order=desc",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "movies"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "10"
+						},
+						{
+							"key": "year",
+							"value": "2020",
+							"description": "Filter by release year"
+						},
+						{
+							"key": "language",
+							"value": "en",
+							"description": "Filter by language (original_language or languages array)"
+						},
+						{
+							"key": "sort_by",
+							"value": "vote_average",
+							"description": "Sort by: release_date or vote_average"
+						},
+						{
+							"key": "sort_order",
+							"value": "desc",
+							"description": "Sort order: asc or desc"
+						}
+					]
+				},
+				"description": "Get movies with filtering (year, language) and sorting (release_date or vote_average, asc/desc)"
+			}
+		},
+		{
+			"name": "List Movies - Sort by Release Date Asc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/movies?page=1&per_page=20&sort_by=release_date&sort_order=asc",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "movies"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "20"
+						},
+						{
+							"key": "sort_by",
+							"value": "release_date"
+						},
+						{
+							"key": "sort_order",
+							"value": "asc"
+						}
+					]
+				},
+				"description": "Get movies sorted by release date ascending (oldest first)"
+			}
+		},
+		{
+			"name": "List Movies - Sort by Ratings Desc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/movies?page=1&per_page=20&sort_by=vote_average&sort_order=desc",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "movies"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "20"
+						},
+						{
+							"key": "sort_by",
+							"value": "vote_average"
+						},
+						{
+							"key": "sort_order",
+							"value": "desc"
+						}
+					]
+				},
+				"description": "Get movies sorted by ratings descending (highest rated first)"
+			}
+		},
+		{
+			"name": "Get Filter Options",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/movies/filters",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "movies", "filters"]
+				},
+				"description": "Get distinct years and languages available for filtering"
+			}
+		}
+	]
+}

@@ -50,6 +50,15 @@ func (h *MovieHandler) ListMovies(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *MovieHandler) DeleteAll(c *gin.Context) {
+	ctx := c.Request.Context()
+	if err := h.repo.DeleteAll(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete movies: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "All movies deleted successfully"})
+}
+
 func (h *MovieHandler) GetFilterOptions(c *gin.Context) {
 	ctx := c.Request.Context()
 	years, err := h.repo.GetDistinctYears(ctx)
