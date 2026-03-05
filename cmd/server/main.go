@@ -41,8 +41,8 @@ func main() {
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      router,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  30 * time.Minute,  // Large CSV uploads can take a long time
+		WriteTimeout: 30 * time.Minute,  // Processing + DB writes for 1GB file
 		IdleTimeout:  120 * time.Second,
 	}
 

@@ -143,14 +143,25 @@ func parseFloat(s string) float64 {
 
 func parseLanguages(s string) []string {
 	s = strings.TrimSpace(s)
+	if s == "" || s == "[]" {
+		return nil
+	}
+	// Handle list format: ['English', 'Español'] or ["English", "Spanish"]
+	s = strings.TrimPrefix(s, "[")
+	s = strings.TrimSuffix(s, "]")
+	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil
 	}
 	parts := strings.Split(s, ",")
 	result := make([]string, 0, len(parts))
 	for _, p := range parts {
-		if trimmed := strings.TrimSpace(p); trimmed != "" {
-			result = append(result, trimmed)
+		p = strings.TrimSpace(p)
+		// Remove surrounding single or double quotes
+		p = strings.Trim(p, "'\"")
+		p = strings.TrimSpace(p)
+		if p != "" && p != "''" && p != "\"\"" {
+			result = append(result, p)
 		}
 	}
 	return result

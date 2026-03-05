@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"log"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -41,7 +42,7 @@ func (r *MovieRepository) UpsertMany(ctx context.Context, movies []*models.Movie
 	models := make([]mongo.WriteModel, 0, len(movies))
 	for _, movie := range movies {
 		filter := bson.M{
-			"title":         movie.Title,
+			"title":        movie.Title,
 			"release_year": movie.ReleaseYear,
 		}
 		models = append(models, mongo.NewReplaceOneModel().
@@ -140,23 +141,40 @@ func (r *MovieRepository) ListMovies(ctx context.Context, opts *ListMoviesOption
 	}, nil
 }
 
+// isValidLanguage filters out garbage values (brackets, stray quotes, etc.)
+func isValidLanguage(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" || len(s) < 2 {
+		return false
+	}
+	// Reject values with brackets or Python list artifacts
+	if strings.Contains(s, "[") || strings.Contains(s, "]") ||
+		strings.HasPrefix(s, "'") || strings.HasSuffix(s, "'") {
+		return false
+	}
+	// Reject placeholder/unknown
+	if s == "?????" || s == "??????" || s == "''" {
+		return false
+	}
+	return true
+}
+
 func (r *MovieRepository) GetDistinctLanguages(ctx context.Context) ([]string, error) {
 	values, err := r.collection.Distinct(ctx, "languages", bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	// Also get original_language for completeness
 	origValues, _ := r.collection.Distinct(ctx, "original_language", bson.M{})
 	seen := make(map[string]bool)
 	languages := make([]string, 0)
 	for _, v := range values {
-		if s, ok := v.(string); ok && s != "" && !seen[s] {
+		if s, ok := v.(string); ok && isValidLanguage(s) && !seen[s] {
 			seen[s] = true
 			languages = append(languages, s)
 		}
 	}
 	for _, v := range origValues {
-		if s, ok := v.(string); ok && s != "" && !seen[s] {
+		if s, ok := v.(string); ok && isValidLanguage(s) && !seen[s] {
 			seen[s] = true
 			languages = append(languages, s)
 		}

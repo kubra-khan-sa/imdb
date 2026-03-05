@@ -94,8 +94,11 @@ The server starts on `http://localhost:8080`.
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/upload \
-  -F "file=@/path/to/movies.csv"
+  -F "file=@/path/to/movies.csv" \
+  --max-time 0
 ```
+
+*Use `--max-time 0` to disable curl's timeout for large files.*
 
 **Response:**
 ```json
