@@ -184,6 +184,8 @@ imdb/
 
 ## Running Tests
 
+Unit test cases are **to-do**. Once implemented:
+
 ```bash
 go test ./...
 ```
