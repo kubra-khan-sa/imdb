@@ -11,7 +11,7 @@ A content management system that allows the content team to upload movie-related
 
 ## CSV Format
 
-The CSV should have the following columns (comma or tab-delimited):
+The CSV should have the following columns:
 
 | Column | Description |
 |--------|-------------|
@@ -165,6 +165,25 @@ Import the Postman collection from `postman/IMDb-Movies-API.postman_collection.j
    - Get Filter Options
 
 Set the `baseUrl` variable to `http://localhost:8080` (default).
+
+## Indexes
+
+The application creates the following MongoDB indexes on startup (idempotent):
+
+| Index | Fields | Purpose |
+|-------|--------|---------|
+| title_release_year | title, release_year | Upsert deduplication |
+| release_year | release_year | Year filter |
+| original_language | original_language | Language filter |
+| languages | languages | Language filter (array) |
+| release_date | release_date | Sort by date |
+| vote_average | vote_average | Sort by rating |
+
+### Impact on Read vs Write
+
+**Reads:** Indexes **speed up** queries. Filtering by `year` or `language` and sorting by `release_date` or `vote_average` use indexes instead of collection scans (O(log n) vs O(n)). `ListMovies` and `GetDistinctYears`/`GetDistinctLanguages` benefit significantly.
+
+**Writes:** Indexes **slow down** inserts/updates slightly. Each write must update the index structures. For bulk upserts (thousands of rows), this adds overhead but is usually acceptable. The `title_release_year` index is essential for fast upsert lookups—without it, each upsert would do a collection scan.
 
 ## Project Structure
 

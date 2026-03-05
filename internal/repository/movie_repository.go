@@ -29,9 +29,29 @@ type MovieRepository struct {
 
 func NewMovieRepository(db *mongo.Database) *MovieRepository {
 	collection := db.Collection("movies")
-	return &MovieRepository{
-		collection: collection,
+	repo := &MovieRepository{collection: collection}
+	// Create indexes on startup (idempotent)
+	if err := repo.EnsureIndexes(context.Background()); err != nil {
+		log.Printf("warning: failed to ensure indexes: %v", err)
 	}
+	return repo
+}
+
+// EnsureIndexes creates indexes for efficient queries and upserts
+func (r *MovieRepository) EnsureIndexes(ctx context.Context) error {
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "title", Value: 1}, {Key: "release_year", Value: 1}},
+			Options: options.Index().SetName("title_release_year"),
+		},
+		{Keys: bson.D{{Key: "release_year", Value: 1}}, Options: options.Index().SetName("release_year")},
+		{Keys: bson.D{{Key: "original_language", Value: 1}}, Options: options.Index().SetName("original_language")},
+		{Keys: bson.D{{Key: "languages", Value: 1}}, Options: options.Index().SetName("languages")},
+		{Keys: bson.D{{Key: "release_date", Value: 1}}, Options: options.Index().SetName("release_date")},
+		{Keys: bson.D{{Key: "vote_average", Value: 1}}, Options: options.Index().SetName("vote_average")},
+	}
+	_, err := r.collection.Indexes().CreateMany(ctx, indexes)
+	return err
 }
 
 // UpsertMany inserts or updates movies to avoid duplicates. Uses (title, release_year) as the unique key.
