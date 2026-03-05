@@ -3,7 +3,10 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strconv"
+
 	"imdb-movies/internal/repository"
+	"github.com/gin-gonic/gin"
 )
 
 type MovieHandler struct {
@@ -16,17 +19,17 @@ func NewMovieHandler(repo *repository.MovieRepository) *MovieHandler {
 	}
 }
 
-func (h *MovieHandler) ListMovies(c *gin.Context) error {
+func (h *MovieHandler) ListMovies(c *gin.Context) {
 	opts := &repository.ListMoviesOptions{
-		Page:    getIntparam(c, "page", 1),
-		PerPage: getIntparam(c, "per_page", 10),
-		sortBy: c.DefaultQuery("sort_by", "release_date"),
-		sortOrder: c.DefaultQuery("sort_order", "desc"),
+		Page:      getIntParam(c, "page", 1),
+		PerPage:   getIntParam(c, "per_page", 10),
+		SortBy:    c.DefaultQuery("sort_by", "release_date"),
+		SortOrder: c.DefaultQuery("sort_order", "desc"),
 	}
 	if year := c.Query("year"); year != "" {
-		year, err := strconv.Atoi(year)
-		if err ==nil & year > 0 {
-			opts.Year = &year
+		y, err := strconv.Atoi(year)
+		if err == nil && y > 0 {
+			opts.Year = &y
 		}
 	}
 	if language := c.Query("language"); language != "" {
@@ -37,34 +40,35 @@ func (h *MovieHandler) ListMovies(c *gin.Context) error {
 	}
 	if opts.SortOrder != "asc" && opts.SortOrder != "desc" {
 		opts.SortOrder = "desc"
-	}	
+	}
 
 	response, err := h.repo.ListMovies(context.Background(), opts)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list movies"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list movies: " + err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
-func GetFilterOptions(c *gin.Context) *repository.ListMoviesOptions {
-	ctx:= c.Request.Context()
+
+func (h *MovieHandler) GetFilterOptions(c *gin.Context) {
+	ctx := c.Request.Context()
 	years, err := h.repo.GetDistinctYears(ctx)
 	if err != nil {
-		return nil
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get years"})
+		return
 	}
 	languages, err := h.repo.GetDistinctLanguages(ctx)
 	if err != nil {
-		return nil
-	}
-	return &repository.ListMoviesOptions{
-		Years: years,
-		Languages: languages,
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get languages"})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"years": years,
+		"years":     years,
 		"languages": languages,
 	})
 }
-func getIntparam(c *gin.Context, name string, defaultValue int) int {
+
+func getIntParam(c *gin.Context, name string, defaultValue int) int {
 	valueStr := c.DefaultQuery(name, strconv.Itoa(defaultValue))
 	value, err := strconv.Atoi(valueStr)
 	if err != nil || value <= 0 {

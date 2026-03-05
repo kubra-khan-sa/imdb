@@ -1,52 +1,62 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
+
 	"imdb-movies/internal/services"
-	 "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
+const maxUploadSize = 1024 * 1024 * 1024 // 1GB
+
 type UploadHandler struct {
-	service *services.UploadService
-	maxfileSize int64
+	service     *services.UploadService
+	maxFileSize int64
 }
 
 func NewUploadHandler(service *services.UploadService, maxFileSize int64) *UploadHandler {
 	return &UploadHandler{
-		service: service,
-		maxfileSize: maxFileSize,
+		service:     service,
+		maxFileSize: maxFileSize,
 	}
-	
-}	
+}
 
-func Uploadcsv(c *gin.Context) error {
-	if h.UploadService == nil {
-		return c.JSON(http.StatusInternalServerError, gin.H{"error": "Upload service not available"})
+func (h *UploadHandler) UploadCSV(c *gin.Context) {
+	if h.service == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Upload service not available"})
+		return
 	}
 	file, err := c.FormFile("file")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get uploaded file"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get uploaded file: " + err.Error()})
+		return
 	}
 	if file.Size > h.maxFileSize {
-		return c.JSON(http.StatusBadRequest, gin.H{"error": "File size exceeds the maximum allowed"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File size exceeds the maximum allowed (1GB)"})
+		return
 	}
 	if file.Size == 0 {
-		return c.JSON(http.StatusBadRequest, gin.H{"error": "Uploaded file is empty"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Uploaded file is empty"})
+		return
 	}
 	f, err := file.Open()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open uploaded file"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open uploaded file"})
+		return
 	}
 	defer f.Close()
-	movies, err := h.UploadService.ProcessUpload(c.Request.Context(), f)
+
+	// Optional: delimiter can be "tab" or "comma" (default)
+	delimiter := c.PostForm("delimiter")
+	result, err := h.service.ProcessUpload(c.Request.Context(), f, delimiter)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process uploaded file"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process uploaded file: " + err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, gin.H{
-		"message":        "File processed successfully",
-		"total_processed": movies.TotalProcessed,
-		"total_inserted":  movies.TotalInserted,
-		"errors":         movies.Errors,
+	c.JSON(http.StatusOK, gin.H{
+		"message":          "File processed successfully",
+		"total_processed":  result.TotalProcessed,
+		"total_inserted":   result.TotalInserted,
+		"errors":           result.Errors,
 	})
-}	
+}

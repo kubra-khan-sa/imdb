@@ -8,24 +8,36 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
 	"imdb-movies/internal/database"
 	"imdb-movies/internal/handlers"
 	"imdb-movies/internal/repository"
-	"github.com/gin-gonic/gin"	
+	"imdb-movies/internal/services"
 )
+
+const maxUploadSize = 1024 * 1024 * 1024 // 1GB
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	// Initialize database connection
-	db, err := database.ConnectMongoDB(ctx, "mydatabase")
+	dbName := getEnv("MONGODB_DATABASE", "mydatabase")
+	db, err := database.ConnectMongoDB(ctx, dbName)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	log.Println("Connected to MongoDB")
-	movierepo := NewMovieRepository(db)
-	movieHandler := handlers.NewMovieHandler(movierepo)
-	router :=setupRoutes(movieHandler, 10)	
+
+	// Initialize repositories and services
+	movieRepo := repository.NewMovieRepository(db)
+	uploadService := services.NewUploadService(movieRepo)
+	movieHandler := handlers.NewMovieHandler(movieRepo)
+	uploadHandler := handlers.NewUploadHandler(uploadService, maxUploadSize)
+
+	router := setupRoutes(movieHandler, uploadHandler)
+
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      router,
@@ -59,16 +71,27 @@ func main() {
 	log.Println("Server gracefully stopped")
 }
 
-func setupRoutes() {
-	router:=gin.Default()
+func setupRoutes(movieHandler *handlers.MovieHandler, uploadHandler *handlers.UploadHandler) *gin.Engine {
+	router := gin.Default()
 	router.MaxMultipartMemory = maxUploadSize
+
 	router.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
 	})
+
 	v1 := router.Group("/api/v1")
 	{
-		v1.POST("/upload", uploadHandler)
-		v1.GET("/movies", getFileHandler)
-		v1.GET("/movies/filters", getFiltersHandler)
+		v1.POST("/upload", uploadHandler.UploadCSV)
+		v1.GET("/movies", movieHandler.ListMovies)
+		v1.GET("/movies/filters", movieHandler.GetFilterOptions)
 	}
+
+	return router
+}
+
+func getEnv(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultVal
 }
